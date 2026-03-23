@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QThread>
 #include <QMutex>
+#include <QStringList>
 
 #include <Limelight.h>
 #if __has_include(<opus/opus.h>)
@@ -30,7 +31,9 @@ class MicCaptureThread : public QThread
     Q_OBJECT
 
 public:
-    explicit MicCaptureThread(uint8_t audioInputId = 0, QObject *parent = nullptr);
+    explicit MicCaptureThread(uint8_t audioInputId = 0,
+                              const QString &deviceName = {},
+                              QObject *parent = nullptr);
     ~MicCaptureThread() override;
 
     void stopCapture();
@@ -55,6 +58,7 @@ private:
     OpusEncoder      *m_OpusEncoder = nullptr;
     uint16_t          m_FrameIndex  = 0;
     uint8_t           m_AudioInputId;
+    QString           m_DeviceName;   ///< SDL device name; empty = default
     bool              m_Active      = false;
 };
 
@@ -76,6 +80,12 @@ public:
 
     bool isActive() const;
     bool isSupported() const;
+
+    /**
+     * @brief Return a list of available microphone device names via SDL.
+     * The first entry is always "Default" (nullptr device).
+     */
+    Q_INVOKABLE QStringList availableDevices() const;
 
 signals:
     void captureStarted();

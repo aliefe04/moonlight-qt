@@ -53,6 +53,7 @@
 #include "streaming/session.h"
 #include "settings/streamingpreferences.h"
 #include "gui/sdlgamepadkeynavigation.h"
+#include "streaming/audio/miccapture.h"
 
 #if defined(Q_OS_WIN32)
 #define IS_UNSPECIFIED_HANDLE(x) ((x) == INVALID_HANDLE_VALUE || (x) == NULL)
@@ -900,6 +901,10 @@ int main(int argc, char *argv[])
                                                    [](QQmlEngine* qmlEngine, QJSEngine*) -> QObject* {
                                                        return StreamingPreferences::get(qmlEngine);
                                                    });
+    qmlRegisterSingletonType<MicCapture>("MicCapture", 1, 0, "MicCapture",
+                                        [](QQmlEngine*, QJSEngine*) -> QObject* {
+                                            return MicCapture::get();
+                                        });
 
     // Create the identity manager on the main thread
     IdentityManager::get();

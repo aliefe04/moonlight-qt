@@ -7,6 +7,7 @@ import StreamingPreferences 1.0
 import ComputerManager 1.0
 import SdlGamepadKeyNavigation 1.0
 import SystemProperties 1.0
+import MicCapture 1.0
 
 Flickable {
     id: settingsPage
@@ -954,6 +955,44 @@ Flickable {
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Streams your microphone to the host PC. Requires Sunshine with mic_passthrough=true and VB-Cable installed on the host.")
+                }
+
+                Label {
+                    width: parent.width
+                    font.pointSize: 12
+                    visible: enableMicrophoneCheck.checked
+                    text: qsTr("Microphone device:")
+                    color: "white"
+                    leftPadding: 22
+                }
+
+                ComboBox {
+                    id: micDeviceCombo
+                    width: parent.width
+                    visible: enableMicrophoneCheck.checked
+                    model: MicCapture.availableDevices()
+
+                    // Restore saved selection; index 0 = Default
+                    Component.onCompleted: {
+                        var saved = StreamingPreferences.micDeviceName
+                        if (saved === "") {
+                            currentIndex = 0
+                        } else {
+                            var idx = model.indexOf(saved)
+                            currentIndex = idx >= 0 ? idx : 0
+                        }
+                    }
+
+                    onCurrentIndexChanged: {
+                        // Index 0 is "Default" — store empty string so SDL uses nullptr
+                        StreamingPreferences.micDeviceName =
+                            currentIndex === 0 ? "" : model[currentIndex]
+                    }
+
+                    ToolTip.delay: 1000
+                    ToolTip.timeout: 5000
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Select the microphone to stream to the host. 'Default' uses the system default microphone.")
                 }
             }
         }

@@ -1,13 +1,14 @@
 #include "miccapture.h"
-// SDL.h already included via SDL_compat.h in the header
+#include "settings/streamingpreferences.h"
 
 // -----------------------------------------------------------------------
 // MicCaptureThread
 // -----------------------------------------------------------------------
 
-MicCaptureThread::MicCaptureThread(uint8_t audioInputId, QObject *parent)
+MicCaptureThread::MicCaptureThread(uint8_t audioInputId, const QString &deviceName, QObject *parent)
     : QThread(parent)
     , m_AudioInputId(audioInputId)
+    , m_DeviceName(deviceName)
 {}
 
 MicCaptureThread::~MicCaptureThread()
@@ -55,8 +56,11 @@ bool MicCaptureThread::initSdlAudio()
     want.samples  = static_cast<Uint16>(MIC_SAMPLES_PER_FRAME);
     want.callback = nullptr;         // queue-based capture
 
-    // nullptr = default capture device; '1' = capture (not playback)
-    m_AudioDevice = SDL_OpenAudioDevice(nullptr, 1, &want, &have, 0);
+    // Use the user-selected device or nullptr for the system default
+    const char *devName = m_DeviceName.isEmpty()
+                          ? nullptr
+                          : m_DeviceName.toUtf8().constData();
+    m_AudioDevice = SDL_OpenAudioDevice(devName, 1, &want, &have, 0);
     if (m_AudioDevice == 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to open microphone: %s", SDL_GetError());
@@ -178,6 +182,36 @@ void MicCaptureThread::run()
 // MicCapture singleton
 // -----------------------------------------------------------------------
 
+QStringList MicCapture::availableDevices() const
+{
+    QStringList devices;
+    devices.append(tr("Default"));  // index 0 = nullptr device name
+
+    // SDL must be initialised to enumerate devices
+    bool initedHere = false;
+    if (!SDL_WasInit(SDL_INIT_AUDIO)) {
+        if (SDL_InitSubSystem(SDL_INIT_AUDIO) == 0) {
+            initedHere = true;
+        } else {
+            return devices;
+        }
+    }
+
+    int count = SDL_GetNumAudioDevices(1 /* capture */);
+    for (int i = 0; i < count; ++i) {
+        const char *name = SDL_GetAudioDeviceName(i, 1);
+        if (name) {
+            devices.append(QString::fromUtf8(name));
+        }
+    }
+
+    if (initedHere) {
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
+
+    return devices;
+}
+
 MicCapture *MicCapture::s_Instance = nullptr;
 
 MicCapture::MicCapture(QObject *parent) : QObject(parent) {}
@@ -213,7 +247,14 @@ bool MicCapture::start(uint8_t audioInputId)
         m_Thread = nullptr;
     }
 
-    m_Thread = new MicCaptureThread(audioInputId, this);
+    // Use the device name the user selected (empty = system default)
+    QString deviceName;
+    auto *prefs = StreamingPreferences::get();
+    if (prefs) {
+        deviceName = prefs->micDeviceName;
+    }
+
+    m_Thread = new MicCaptureThread(audioInputId, deviceName, this);
     connect(m_Thread, &MicCaptureThread::captureStarted, this, &MicCapture::captureStarted);
     connect(m_Thread, &MicCaptureThread::captureStopped, this, &MicCapture::captureStopped);
     connect(m_Thread, &MicCaptureThread::captureError,   this, &MicCapture::captureError);
