@@ -2,6 +2,7 @@
 #include "settings/streamingpreferences.h"
 #include "streaming/streamutils.h"
 #include "backend/richpresencemanager.h"
+#include "streaming/audio/miccapture.h"
 
 #include <Limelight.h>
 #include "SDL_compat.h"
@@ -702,6 +703,18 @@ bool Session::initialize(QQuickWindow* qtWindow)
         break;
     }
 
+    // Microphone passthrough configuration (Sunshine extension)
+    if (m_Preferences->micPassthrough) {
+        m_StreamConfig.micPassthrough = 1;
+        m_StreamConfig.micCodec = LI_MIC_CODEC_OPUS;
+        m_StreamConfig.micChannels = 1;  // Mono
+        m_StreamConfig.micSampleRate = 48000;
+        m_StreamConfig.micBitrate = 64000;
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Microphone passthrough enabled");
+    } else {
+        m_StreamConfig.micPassthrough = 0;
+    }
+
     LiInitializeAudioCallbacks(&m_AudioCallbacks);
     m_AudioCallbacks.init = arInit;
     m_AudioCallbacks.cleanup = arCleanup;
@@ -1283,6 +1296,9 @@ private:
         // LiStartConnection() and LiStopConnection().
         SDL_assert(m_Session->m_VideoDecoder == nullptr);
 
+        // Stop microphone capture if running
+        MicCapture::get()->stop();
+
         // Finish cleanup of the connection state
         LiStopConnection();
 
@@ -1703,6 +1719,13 @@ bool Session::startConnectionAsync()
         // We already displayed an error dialog in the stage failure
         // listener.
         return false;
+    }
+
+    // Start microphone capture if enabled
+    if (m_Preferences->micPassthrough && LiIsMicPassthroughSupported()) {
+        if (!MicCapture::get()->start()) {
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Failed to start microphone capture");
+        }
     }
 
     emit connectionStarted();
