@@ -39,7 +39,17 @@ bool MicCaptureThread::initOpus()
         return false;
     }
     opus_encoder_ctl(m_OpusEncoder, OPUS_SET_BITRATE(MIC_BITRATE));
-    opus_encoder_ctl(m_OpusEncoder, OPUS_SET_INBAND_FEC(1));   // packet-loss resilience
+    
+    // Enable Opus in-band FEC for packet loss resilience
+    // This embeds redundant data in the next packet to recover from loss
+    if (MIC_FEC_PERCENTAGE > 0) {
+        opus_encoder_ctl(m_OpusEncoder, OPUS_SET_INBAND_FEC(1));
+        // Set the expected packet loss percentage to optimize FEC strength
+        opus_encoder_ctl(m_OpusEncoder, OPUS_SET_PACKET_LOSS_PERC(MIC_FEC_PERCENTAGE));
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "Opus encoder FEC enabled at %d%%", MIC_FEC_PERCENTAGE);
+    }
+    
     opus_encoder_ctl(m_OpusEncoder, OPUS_SET_DTX(0));          // continuous transmission
     return true;
 }
@@ -140,6 +150,7 @@ void MicCaptureThread::run()
     int rc = LiSendMicStartEvent(m_AudioInputId,
                                  LI_MIC_CODEC_OPUS,
                                  static_cast<uint8_t>(MIC_CHANNELS),
+                                 static_cast<uint8_t>(MIC_FEC_PERCENTAGE),
                                  static_cast<uint32_t>(MIC_SAMPLE_RATE),
                                  static_cast<uint32_t>(MIC_BITRATE));
     if (rc != 0) {
