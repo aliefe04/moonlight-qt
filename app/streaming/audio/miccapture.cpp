@@ -1,10 +1,6 @@
 #include "miccapture.h"
 #include "settings/streamingpreferences.h"
 
-#ifdef __APPLE__
-#include <AVFoundation/AVFoundation.h>
-#endif
-
 // -----------------------------------------------------------------------
 // MicCaptureThread
 // -----------------------------------------------------------------------
@@ -189,15 +185,9 @@ void MicCaptureThread::run()
 void MicCapture::requestPermission()
 {
 #ifdef __APPLE__
-    // Ask macOS for microphone access. If already granted this is instant.
-    // If not yet decided, the system dialog appears now — before the stream
-    // window goes full-screen and hides it.
-    if (@available(macOS 10.14, *)) {
-        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio
-                               completionHandler:^(BOOL) {
-            // Result handled next time SDL_OpenAudioDevice is called
-        }];
-    }
+    // Implemented in miccapture_mac.mm (Objective-C++ bridge)
+    extern void MicCapture_requestPermission_mac();
+    MicCapture_requestPermission_mac();
 #endif
 }
 
