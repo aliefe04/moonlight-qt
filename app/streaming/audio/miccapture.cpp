@@ -1,9 +1,10 @@
 #include "miccapture.h"
 #include "settings/streamingpreferences.h"
 
-// Forward declaration at file scope — extern "C" is not valid inside a function body
+// Forward declarations at file scope — extern "C" is not valid inside a function body
 #ifdef __APPLE__
-extern "C" void MicCapture_requestPermission_mac();
+extern "C" int MicCapture_checkPermissionStatus_mac();
+extern "C" void MicCapture_requestPermission_mac(void (*callback)(int granted));
 #endif
 
 // -----------------------------------------------------------------------
@@ -198,10 +199,54 @@ void MicCaptureThread::run()
 // MicCapture singleton
 // -----------------------------------------------------------------------
 
+bool MicCapture::hasPermission() const
+{
+#ifdef __APPLE__
+    int status = MicCapture_checkPermissionStatus_mac();
+    return status == 1;  // 1 = authorized
+#else
+    // Non-Apple platforms don't have a permission system
+    return true;
+#endif
+}
+
 void MicCapture::requestPermission()
 {
 #ifdef __APPLE__
-    MicCapture_requestPermission_mac();
+    // Check current status first
+    int status = MicCapture_checkPermissionStatus_mac();
+    
+    if (status == 1) {
+        // Already granted
+        emit permissionResult(true);
+        return;
+    }
+    
+    if (status == -1 || status == -2) {
+        // Already denied or restricted
+        emit permissionResult(false);
+        return;
+    }
+    
+    // Not determined - request permission with callback
+    // We need to capture 'this' for the callback, but the callback is a C function
+    // So we use a static helper
+    static MicCapture *s_PendingInstance = nullptr;
+    s_PendingInstance = this;
+    
+    MicCapture_requestPermission_mac([](int granted) {
+        // This callback runs on a background thread
+        // Use Qt's signal/slot to safely communicate back to the UI thread
+        if (s_PendingInstance) {
+            // Use QMetaObject::invokeMethod to safely emit the signal
+            QMetaObject::invokeMethod(s_PendingInstance, [s_PendingInstance, granted]() {
+                emit s_PendingInstance->permissionResult(granted != 0);
+            }, Qt::QueuedConnection);
+        }
+    });
+#else
+    // Non-Apple platforms - permission always granted
+    emit permissionResult(true);
 #endif
 }
 

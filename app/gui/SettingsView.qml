@@ -946,12 +946,48 @@ Flickable {
                     width: parent.width
                     text: qsTr("Enable microphone passthrough")
                     font.pointSize: 12
-                    checked: StreamingPreferences.enableMicrophone
-                    onCheckedChanged: {
-                        StreamingPreferences.enableMicrophone = checked
-                        // Trigger macOS permission dialog immediately when user enables the setting
+                    checked: StreamingPreferences.enableMicrophone && MicCapture.hasPermission()
+                    
+                    // Check permission status when component loads
+                    Component.onCompleted: {
+                        if (checked && !MicCapture.hasPermission()) {
+                            // Permission was revoked - uncheck
+                            checked = false
+                            StreamingPreferences.enableMicrophone = false
+                        }
+                    }
+                    
+                    // Handle user clicking the checkbox
+                    onClicked: {
                         if (checked) {
-                            MicCapture.requestPermission()
+                            // User wants to enable - check/request permission first
+                            if (MicCapture.hasPermission()) {
+                                // Already have permission
+                                StreamingPreferences.enableMicrophone = true
+                            } else {
+                                // Request permission - result will come via signal
+                                MicCapture.requestPermission()
+                            }
+                        } else {
+                            // User wants to disable
+                            StreamingPreferences.enableMicrophone = false
+                        }
+                    }
+                    
+                    // Handle permission request result
+                    Connections {
+                        target: MicCapture
+                        function onPermissionResult(granted) {
+                            if (granted) {
+                                // Permission granted - enable the setting
+                                StreamingPreferences.enableMicrophone = true
+                                enableMicrophoneCheck.checked = true
+                            } else {
+                                // Permission denied - keep unchecked and show message
+                                enableMicrophoneCheck.checked = false
+                                StreamingPreferences.enableMicrophone = false
+                                micPermissionDeniedDialog.open()
+                            }
                         }
                     }
 
@@ -959,6 +995,29 @@ Flickable {
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Streams your microphone to the host PC. Requires Sunshine with mic_passthrough=true and VB-Cable installed on the host.")
+                }
+                
+                // Dialog shown when permission is denied
+                Dialog {
+                    id: micPermissionDeniedDialog
+                    title: qsTr("Microphone Permission Required")
+                    modal: true
+                    standardButtons: Dialog.Ok
+                    
+                    Label {
+                        text: qsTr("Moonlight needs microphone permission to stream your voice.\n\nTo enable:\n1. Open System Settings\n2. Go to Privacy & Security > Microphone\n3. Enable Moonlight")
+                        color: "white"
+                        wrapMode: Text.WordWrap
+                    }
+                    
+                    onAccepted: {
+                        // User acknowledged - they need to go to System Settings
+                    }
+                    
+                    background: Rectangle {
+                        color: "#333333"
+                        radius: 5
+                    }
                 }
 
                 Label {
