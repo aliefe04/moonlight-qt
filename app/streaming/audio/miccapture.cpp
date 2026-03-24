@@ -1,6 +1,11 @@
 #include "miccapture.h"
 #include "settings/streamingpreferences.h"
 
+// Forward declaration at file scope — extern "C" is not valid inside a function body
+#ifdef __APPLE__
+extern "C" void MicCapture_requestPermission_mac();
+#endif
+
 // -----------------------------------------------------------------------
 // MicCaptureThread
 // -----------------------------------------------------------------------
@@ -185,8 +190,6 @@ void MicCaptureThread::run()
 void MicCapture::requestPermission()
 {
 #ifdef __APPLE__
-    // Implemented in miccapture_mac.mm (Objective-C++ bridge)
-    extern "C" void MicCapture_requestPermission_mac();
     MicCapture_requestPermission_mac();
 #endif
 }
