@@ -186,7 +186,7 @@ void MicCapture::requestPermission()
 {
 #ifdef __APPLE__
     // Implemented in miccapture_mac.mm (Objective-C++ bridge)
-    extern void MicCapture_requestPermission_mac();
+    extern "C" void MicCapture_requestPermission_mac();
     MicCapture_requestPermission_mac();
 #endif
 }
