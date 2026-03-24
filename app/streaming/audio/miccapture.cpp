@@ -352,3 +352,23 @@ bool MicCapture::isSupported() const
 {
     return LiIsMicPassthroughSupported();
 }
+
+bool MicCapture::toggle()
+{
+    if (isActive()) {
+        stop();
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Microphone toggled OFF");
+        return false;
+    } else {
+        if (hasPermission()) {
+            if (start()) {
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Microphone toggled ON");
+                return true;
+            }
+        } else {
+            SDL_LogWarning(SDL_LOG_CATEGORY_APPLICATION,
+                           "Cannot toggle microphone: permission not granted");
+        }
+        return false;
+    }
+}

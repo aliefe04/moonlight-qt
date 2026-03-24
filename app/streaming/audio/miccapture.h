@@ -103,6 +103,12 @@ public:
      */
     Q_INVOKABLE void requestPermission();
 
+    /**
+     * @brief Toggle microphone capture on/off.
+     * @return true if mic is now active, false if now stopped.
+     */
+    Q_INVOKABLE bool toggle();
+
 signals:
     void captureStarted();
     void captureStopped();

@@ -2,6 +2,8 @@
 
 #include <Limelight.h>
 #include "SDL_compat.h"
+#include "streaming/audio/miccapture.h"
+#include "streaming/video/overlaymanager.h"
 
 #define VK_0 0x30
 #define VK_A 0x41
@@ -151,6 +153,27 @@ void SdlInputHandler::performSpecialKeyCombo(KeyCombo combo)
         quitExitEvent.type = SDL_QUIT;
         quitExitEvent.quit.timestamp = SDL_GetTicks();
         SDL_PushEvent(&quitExitEvent);
+        break;
+
+    case KeyComboToggleMicrophone:
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                    "Detected microphone toggle combo");
+
+        // Toggle mic capture
+        {
+            bool nowActive = MicCapture::get()->toggle();
+
+            // Show overlay message
+            if (nowActive) {
+                Session::get()->getOverlayManager().updateOverlayText(
+                    Overlay::OverlayStatusUpdate, "Microphone ON");
+            } else {
+                Session::get()->getOverlayManager().updateOverlayText(
+                    Overlay::OverlayStatusUpdate, "Microphone OFF");
+            }
+            Session::get()->getOverlayManager().setOverlayState(
+                Overlay::OverlayStatusUpdate, true);
+        }
         break;
 
     default:
