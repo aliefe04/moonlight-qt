@@ -949,6 +949,10 @@ Flickable {
                     checked: StreamingPreferences.enableMicrophone
                     onCheckedChanged: {
                         StreamingPreferences.enableMicrophone = checked
+                        // Trigger macOS permission dialog immediately when user enables the setting
+                        if (checked) {
+                            MicCapture.requestPermission()
+                        }
                     }
 
                     ToolTip.delay: 1000

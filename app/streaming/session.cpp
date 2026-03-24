@@ -1721,6 +1721,10 @@ bool Session::startConnectionAsync()
 
     // Start mic capture after connection succeeds (host must support it)
     if (m_Preferences->enableMicrophone) {
+        // Ensure macOS permission was requested (dialog may appear here if
+        // the user skipped the Settings page after enabling the checkbox)
+        MicCapture::get()->requestPermission();
+
         if (MicCapture::get()->start()) {
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Microphone capture started");
         } else {

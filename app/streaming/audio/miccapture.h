@@ -87,6 +87,14 @@ public:
      */
     Q_INVOKABLE QStringList availableDevices() const;
 
+    /**
+     * @brief Trigger the macOS microphone permission dialog proactively.
+     * Call this from the UI thread before starting a stream so the dialog
+     * appears before the full-screen stream window hides it.
+     * No-op on non-Apple platforms.
+     */
+    Q_INVOKABLE void requestPermission();
+
 signals:
     void captureStarted();
     void captureStopped();
