@@ -1730,7 +1730,7 @@ bool Session::startConnectionAsync()
                             "Microphone passthrough not started (host may not support it)");
             }
         } else {
-            SDL_LogWarning(SDL_LOG_CATEGORY_APPLICATION,
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                            "Microphone passthrough enabled but permission not granted. "
                            "Enable microphone permission in System Settings.");
         }

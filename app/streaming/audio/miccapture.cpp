@@ -366,7 +366,7 @@ bool MicCapture::toggle()
                 return true;
             }
         } else {
-            SDL_LogWarning(SDL_LOG_CATEGORY_APPLICATION,
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                            "Cannot toggle microphone: permission not granted");
         }
         return false;
