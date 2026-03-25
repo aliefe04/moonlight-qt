@@ -239,8 +239,10 @@ void MicCapture::requestPermission()
         // Use Qt's signal/slot to safely communicate back to the UI thread
         if (s_PendingInstance) {
             // Use QMetaObject::invokeMethod to safely emit the signal
-            QMetaObject::invokeMethod(s_PendingInstance, [s_PendingInstance, granted]() {
-                emit s_PendingInstance->permissionResult(granted != 0);
+            QMetaObject::invokeMethod(s_PendingInstance, [granted]() {
+                if (s_PendingInstance) {
+                    emit s_PendingInstance->permissionResult(granted != 0);
+                }
             }, Qt::QueuedConnection);
         }
     });
