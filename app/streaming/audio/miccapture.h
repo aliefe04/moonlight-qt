@@ -17,9 +17,9 @@
 // -----------------------------------------------------------------------
 // Audio constants — must match Sunshine's mic_stream.h SAMPLES_PER_FRAME
 // -----------------------------------------------------------------------
-constexpr int MIC_SAMPLE_RATE        = 48000;
+constexpr int MIC_SAMPLE_RATE        = 44100;  // Match Steam Streaming Microphone
 constexpr int MIC_FRAME_DURATION_MS  = 20;
-constexpr int MIC_SAMPLES_PER_FRAME  = MIC_SAMPLE_RATE * MIC_FRAME_DURATION_MS / 1000; // 960
+constexpr int MIC_SAMPLES_PER_FRAME  = MIC_SAMPLE_RATE * MIC_FRAME_DURATION_MS / 1000; // 882
 constexpr int MIC_CHANNELS           = 1;     // mono
 constexpr int MIC_BITRATE            = 64000; // bps
 constexpr int MIC_FEC_PERCENTAGE     = 20;    // 20% FEC for packet loss resilience
